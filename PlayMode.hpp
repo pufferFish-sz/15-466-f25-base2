@@ -49,9 +49,9 @@ struct PlayMode : Mode {
 
 	std::vector<Buggy> bugs;
 	// x-z plane
-	glm::vec2 arena_min = glm::vec2(-6.0f, -4.0f); // minx, minz
-	glm::vec2 arena_max = glm::vec2(6.0f, 4.0f); // maxx, maxz
-	float ground_y = 0.0f; //floor
+	glm::vec2 arena_min = glm::vec2(-10.0f, 0.0f); // minx, minz
+	glm::vec2 arena_max = glm::vec2(5.0f, 4.0f); // maxx, maxz
+	float ground_y = 2.0f; //floor
 
 	//spawn
 	float spawn_timer = 0.0f;
@@ -65,6 +65,9 @@ struct PlayMode : Mode {
 	void pick_new_dir(Buggy& b);
 	void face_velocity_y(Buggy& b);
 	Scene::Drawable* find_drawable_for(Scene::Transform* tf);
+
+	float hit_radius = 4.0f;
+	void despawn_bug(Buggy& b);
 
 };
 

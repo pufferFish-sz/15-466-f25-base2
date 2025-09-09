@@ -48,6 +48,7 @@ PlayMode::PlayMode() : scene(*bugbat_scene) {
 	if (bug == nullptr) throw std::runtime_error("Bug not found.");
 	if (bat == nullptr) throw std::runtime_error("Bat not found.");
 
+	bug->parent = nullptr;
 	//get pointer to camera for convenience:
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
 	camera = &scene.cameras.front();
@@ -79,6 +80,28 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 		
 	} else if (evt.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
 		tilt_time = tilt_duration;
+
+		// closest bug 
+		float r2 = hit_radius * hit_radius;
+		int closest_idx = -1;
+		float closest_d2 = std::numeric_limits<float>::max();
+
+		for (int i = 0; i < (int)bugs.size(); ++i) {
+			auto& b = bugs[i];
+			if (!b.tf) continue;
+			// calculate squared distance
+			glm::vec3 dp = b.tf->position - bat->position;
+			float d2 = dp.x * dp.x + dp.y * dp.y + dp.z * dp.z;
+			if (d2 < r2 && d2 < closest_d2) {
+				closest_d2 = d2;
+				closest_idx = i;
+			}
+		}
+		if (closest_idx >= 0) {
+			std::cout << "bug despawned with index " << closest_idx << std::endl;
+			despawn_bug(bugs[closest_idx]);
+			
+		}
 		return true;
 	} else if (evt.type == SDL_EVENT_MOUSE_MOTION) {
 		float x = ((evt.motion.x + 0.5f) / float(window_size.x)) * 2.0f - 1.0f;
@@ -220,6 +243,7 @@ void PlayMode::draw(glm::uvec2 const& drawable_size) {
 		t->position = proto->position;
 		t->rotation = proto->rotation;
 		t->scale = proto->scale;
+		t->parent = nullptr;
 
 		Scene::Drawable* pd = find_drawable_for(proto);
 		if (!pd) throw std::runtime_error("prototype bug not drawable");
@@ -251,7 +275,7 @@ void PlayMode::draw(glm::uvec2 const& drawable_size) {
 				pick_new_dir(b);
 			}
 
-			// make bugs walk with jitter on XZ (not Y)
+			// make bugs walk with jitter on XZ 
 			b.velocity.x += jitter(rng) * dt;
 			b.velocity.z += jitter(rng) * dt;
 
@@ -282,6 +306,15 @@ void PlayMode::draw(glm::uvec2 const& drawable_size) {
 				face_velocity_y(b);
 			}
 		}
+	}
+
+	void PlayMode::despawn_bug(PlayMode::Buggy& b) {
+		if (!b.tf) return;
+		// hide drawable
+		if (Scene::Drawable* d = find_drawable_for(b.tf)) {
+			d->pipeline.count = 0;
+		}
+		b.tf = nullptr;
 	}
 
 
